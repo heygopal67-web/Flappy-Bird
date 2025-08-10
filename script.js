@@ -371,10 +371,14 @@ function renderPipes() {
     pipeElement.style.height = pipe.height + "vh";
     pipeElement.style.width = pipe.width + "vw";
 
-    // Add some debugging info
-    pipeElement.style.backgroundColor = "green";
-    pipeElement.style.border = "2px solid darkgreen";
-    pipeElement.style.zIndex = "50";
+    // Fix z-index - pipes should be behind the bird
+    pipeElement.style.zIndex = "10";
+
+    // Remove debug styling and use proper pipe appearance
+    pipeElement.style.background = "radial-gradient(lightgreen 50%, green)";
+    pipeElement.style.border = "5px solid #2c3e50";
+    pipeElement.style.borderRadius = "5px";
+    pipeElement.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.3)";
 
     document.body.appendChild(pipeElement);
   });
