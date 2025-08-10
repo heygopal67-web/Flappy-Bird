@@ -302,6 +302,9 @@ function spawnPipe() {
   };
 
   gameState.pipes.push(topPipe, bottomPipe);
+
+  // Debug: log pipe creation
+  console.log("Pipes spawned:", topPipe, bottomPipe);
 }
 
 // Check for collisions
@@ -360,10 +363,18 @@ function renderPipes() {
   gameState.pipes.forEach((pipe) => {
     const pipeElement = document.createElement("div");
     pipeElement.className = "pipe_sprite";
+
+    // Fix positioning - use fixed positioning and proper units
+    pipeElement.style.position = "fixed";
     pipeElement.style.left = pipe.x + "vw";
     pipeElement.style.top = pipe.y + "vh";
     pipeElement.style.height = pipe.height + "vh";
     pipeElement.style.width = pipe.width + "vw";
+
+    // Add some debugging info
+    pipeElement.style.backgroundColor = "green";
+    pipeElement.style.border = "2px solid darkgreen";
+    pipeElement.style.zIndex = "50";
 
     document.body.appendChild(pipeElement);
   });
