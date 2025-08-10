@@ -1,87 +1,396 @@
+/* Reset and Base Styles */
 * {
-	margin: 0;
-	padding: 0;
-	box-sizing: border-box;
-	font-family: Arial, Helvetica, sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
+
+body {
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+    user-select: none;
+}
+
+/* Background */
 .background {
-	height: 100vh;
-	width: 100vw;
-	background: url('images/background-img.png') no-repeat center center fixed;
-    -webkit-background-size: cover;
-    -moz-background-size: cover;
-    -o-background-size: cover;
+    height: 100vh;
+    width: 100vw;
+    background: url('images/background-img.png') no-repeat center center fixed;
     background-size: cover;
+    position: fixed;
+    z-index: 1;
 }
+
+/* Loading Screen */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.loading-content {
+    text-align: center;
+    color: white;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 20px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Start Screen */
+.start-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 100;
+}
+
+.start-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.game-title {
+    font-size: 3rem;
+    color: #2c3e50;
+    margin-bottom: 30px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.controls-info {
+    margin: 20px 0;
+    line-height: 1.6;
+}
+
+.controls-info p {
+    margin: 10px 0;
+    color: #34495e;
+}
+
+.key {
+    background: #3498db;
+    color: white;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    display: inline-block;
+    min-width: 30px;
+    text-align: center;
+}
+
+.start-btn {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+    color: white;
+    border: none;
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    border-radius: 25px;
+    cursor: pointer;
+    margin: 20px 0;
+    transition: all 0.3s ease;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.start-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+}
+
+.high-score {
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+}
+
+.high-score p {
+    color: #495057;
+    font-weight: bold;
+}
+
+/* Game UI */
+.game-ui {
+    position: relative;
+    z-index: 10;
+}
+
+/* Bird */
 .bird {
-	height: 100px;
-	width: 130px;
-	position: fixed;
-	top: 40vh;
-	left: 30vw;
-	z-index: 100;
+    height: 80px;
+    width: 100px;
+    position: fixed;
+    top: 40vh;
+    left: 30vw;
+    z-index: 100;
+    transition: transform 0.1s ease;
 }
+
+.bird.flapping {
+    transform: rotate(-15deg);
+}
+
+/* Pipes */
 .pipe_sprite {
-	position: fixed;
-	top: 40vh;
-	left: 100vw;
-	height: 70vh;
-	width: 6vw;
-	background:radial-gradient(lightgreen 50%, green);
-	border: 5px solid black;
+    position: fixed;
+    top: 40vh;
+    left: 100vw;
+    height: 70vh;
+    width: 6vw;
+    background: radial-gradient(lightgreen 50%, green);
+    border: 5px solid #2c3e50;
+    border-radius: 5px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
 }
-.message {
-	position: absolute;
-	font-family: cursive;
-	z-index: 10;
-	color: black;
-	top: 50%;
-	left: 50%;
-	font-size: xx-large;
-	transform: translate(-50%, -50%);
-	text-align: center;
-  }
-  
-.messageStyle{
-	padding: 30px;
-	border-radius: 10%;
+
+/* Pause Overlay */
+.pause-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
 }
-.message p{
-	font-family: cursive;
-	font-size: x-large;
+
+.pause-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
-.score {
-	position: fixed;
-	z-index: 10;
-	height: 10px;
-	font-size: 20px;
-	font-weight: 100;
-	color: white;
-	-webkit-text-stroke-width: 2px;
-    -webkit-text-stroke-color: black;
-	top: 0;
-	left: 0;
-	margin: 20px;
-	font-family: Arial, Helvetica, sans-serif;
+
+.pause-content h2 {
+    color: #2c3e50;
+    margin-bottom: 15px;
 }
-.score_val {
-	color: gold;
-	font-weight: bold;
+
+.resume-btn {
+    background: linear-gradient(45deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 1rem;
+    border-radius: 20px;
+    cursor: pointer;
+    margin-top: 15px;
+    transition: all 0.3s ease;
 }
-@media only screen and (max-width: 1080px) {
-    .message{
-		font-size: 50px;
-		top: 50%;
-		white-space: nowrap;
-	}
-	.score{
-		font-size: 8vh;
-	}
-	.bird{
-		width: 120px;
-		height: 90px;
-	}
-	.pipe_sprite{
-		width: 14vw;
-	}
+
+.resume-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Game Over Screen */
+.game-over-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 200;
+}
+
+.game-over-content {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    max-width: 400px;
+    width: 90%;
+}
+
+.game-over-content h2 {
+    color: #e74c3c;
+    font-size: 2.5rem;
+    margin-bottom: 20px;
+}
+
+.final-score {
+    margin: 20px 0;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.final-score p {
+    margin: 10px 0;
+    font-size: 1.2rem;
+    color: #495057;
+}
+
+.game-over-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.restart-btn, .menu-btn {
+    padding: 12px 25px;
+    font-size: 1rem;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 120px;
+}
+
+.restart-btn {
+    background: linear-gradient(45deg, #27ae60, #2ecc71);
+    color: white;
+}
+
+.menu-btn {
+    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+    color: white;
+}
+
+.restart-btn:hover, .menu-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Score Display */
+.score-display {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 50;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 15px;
+    border-radius: 15px;
+    color: white;
+    min-width: 150px;
+}
+
+.current-score, .high-score-display {
+    display: flex;
+    justify-content: space-between;
+    margin: 5px 0;
+}
+
+.score-label, .high-score-label {
+    color: #bdc3c7;
+}
+
+.score-value, .high-score-value {
+    color: #f1c40f;
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+/* Game Instructions */
+.game-instructions {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 25px;
+    font-size: 1rem;
+    z-index: 50;
+    animation: fadeInOut 2s ease-in-out infinite;
+}
+
+@keyframes fadeInOut {
+    0%, 100% { opacity: 0.7; }
+    50% { opacity: 1; }
+}
+
+/* Responsive Design */
+@media only screen and (max-width: 768px) {
+    .game-title {
+        font-size: 2.5rem;
+    }
+    
+    .start-content, .game-over-content {
+        padding: 30px 20px;
+        margin: 20px;
+    }
+    
+    .score-display {
+        top: 10px;
+        right: 10px;
+        padding: 10px;
+        min-width: 120px;
+    }
+    
+    .bird {
+        width: 70px;
+        height: 60px;
+    }
+    
+    .pipe_sprite {
+        width: 8vw;
+    }
+    
+    .game-instructions {
+        bottom: 20px;
+        padding: 10px 20px;
+        font-size: 0.9rem;
+    }
+}
+
+@media only screen and (max-width: 480px) {
+    .game-title {
+        font-size: 2rem;
+    }
+    
+    .controls-info p {
+        font-size: 0.9rem;
+    }
+    
+    .start-btn {
+        padding: 12px 25px;
+        font-size: 1rem;
+    }
+    
+    .score-display {
+        min-width: 100px;
+        font-size: 0.9rem;
+    }
 }
