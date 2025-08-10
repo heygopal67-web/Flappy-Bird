@@ -11,10 +11,10 @@ let gameState = {
   gravity: 0.8, // Stronger gravity for jumping physics
   jumpPower: -12, // Stronger jump for platformer style
   obstacles: [], // Changed from pipes to obstacles
-  obstacleGap: 35, // Distance between obstacles
-  obstacleWidth: 8, // Width of stone obstacles
-  obstacleHeight: 15, // Height of stone obstacles
-  gameSpeed: 2, // Faster horizontal movement for running
+  obstacleGap: 50, // Increased distance between obstacles
+  obstacleWidth: 10, // Consistent width for all stone obstacles
+  obstacleHeight: 20, // Consistent height for all stone obstacles
+  gameSpeed: 1, // Slower horizontal movement for better control
   animationId: null,
   countdown: 3,
   canJump: true,
