@@ -6,19 +6,21 @@ let gameState = {
   isCountdown: false,
   score: 0,
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
-  birdY: 50,
+  birdY: 75, // Bird now runs on the ground (75vh from top) - adjusted from 85
   birdVelocity: 0,
-  gravity: 0.08, // Reduced from 0.12 for slower initial speed
-  jumpPower: -1.2, // Reduced from -1.8 for gentler jumps
-  pipes: [],
-  pipeGap: 35, // Increased initial gap from 25 to 35vh for easier start
-  pipeWidth: 6,
-  gameSpeed: 0.8, // Reduced from 1 for slower initial pipe movement
+  gravity: 0.8, // Stronger gravity for jumping physics
+  jumpPower: -12, // Stronger jump for platformer style
+  obstacles: [], // Changed from pipes to obstacles
+  obstacleGap: 35, // Distance between obstacles
+  obstacleWidth: 8, // Width of stone obstacles
+  obstacleHeight: 15, // Height of stone obstacles
+  gameSpeed: 2, // Faster horizontal movement for running
   animationId: null,
   countdown: 3,
   canJump: true,
-  jumpCooldown: 150,
-  basePipeGap: 35, // Store the base gap for difficulty progression
+  jumpCooldown: 300, // Longer cooldown for jumping
+  baseObstacleGap: 35, // Store the base gap for difficulty progression
+  isGrounded: true, // Track if bird is on the ground
 };
 
 // DOM Elements
@@ -131,9 +133,9 @@ function startGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = true;
   gameState.score = 0;
-  gameState.birdY = 50;
+  gameState.birdY = 85;
   gameState.birdVelocity = 0;
-  gameState.pipes = [];
+  gameState.obstacles = [];
   gameState.countdown = 3;
 
   startScreen.style.display = "none";
@@ -224,10 +226,10 @@ function updateGame() {
 
   // Spawn new pipes
   if (
-    gameState.pipes.length === 0 ||
-    gameState.pipes[gameState.pipes.length - 1].x < 70
+    gameState.obstacles.length === 0 ||
+    gameState.obstacles[gameState.obstacles.length - 1].x < 70
   ) {
-    spawnPipe();
+    spawnObstacle();
   }
 }
 
@@ -235,46 +237,51 @@ function updateGame() {
 function updateBird() {
   if (gameState.isCountdown) return;
 
-  // Apply gravity more gently
+  // Apply gravity for jumping
   gameState.birdVelocity += gameState.gravity;
 
   // Limit maximum falling speed
-  if (gameState.birdVelocity > 2) {
-    gameState.birdVelocity = 2;
+  if (gameState.birdVelocity > 15) {
+    gameState.birdVelocity = 15;
   }
 
   // Limit maximum upward speed
-  if (gameState.birdVelocity < -2) {
-    gameState.birdVelocity = -2;
+  if (gameState.birdVelocity < -15) {
+    gameState.birdVelocity = -15;
   }
 
   gameState.birdY += gameState.birdVelocity;
 
-  // Keep bird within screen bounds with much more forgiving boundaries
-  if (gameState.birdY < 2) {
-    gameState.birdY = 2;
+  // Ground collision - bird runs on the ground (adjusted from 85 to 75)
+  if (gameState.birdY >= 75) {
+    gameState.birdY = 75;
     gameState.birdVelocity = 0;
+    gameState.isGrounded = true;
+  } else {
+    gameState.isGrounded = false;
   }
-  if (gameState.birdY > 95) {
-    gameState.birdY = 95;
+
+  // Ceiling collision - prevent bird from going too high
+  if (gameState.birdY < 20) {
+    gameState.birdY = 20;
     gameState.birdVelocity = 0;
   }
 }
 
 // Update pipes
 function updatePipes() {
-  for (let i = gameState.pipes.length - 1; i >= 0; i--) {
-    const pipe = gameState.pipes[i];
-    pipe.x -= gameState.gameSpeed;
+  for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
+    const obstacle = gameState.obstacles[i];
+    obstacle.x -= gameState.gameSpeed;
 
     // Remove pipes that are off screen
-    if (pipe.x < -gameState.pipeWidth) {
-      gameState.pipes.splice(i, 1);
+    if (obstacle.x < -gameState.obstacleWidth) {
+      gameState.obstacles.splice(i, 1);
     }
 
     // Check if bird passed pipe
-    if (!pipe.passed && pipe.x < 30) {
-      pipe.passed = true;
+    if (!obstacle.passed && obstacle.x < 30) {
+      obstacle.passed = true;
       gameState.score++;
       updateScoreDisplay();
       playSound(pointSound);
@@ -283,11 +290,11 @@ function updatePipes() {
 }
 
 // Calculate dynamic pipe gap based on score (gets harder as score increases)
-function calculatePipeGap() {
+function calculateObstacleGap() {
   // Start with base gap and reduce it as score increases
   const difficultyFactor = Math.min(gameState.score / 10, 1); // Max difficulty at score 10
   const minGap = 20; // Minimum gap (hardest)
-  const maxGap = gameState.basePipeGap; // Maximum gap (easiest)
+  const maxGap = gameState.baseObstacleGap; // Maximum gap (easiest)
 
   // Linear difficulty progression
   const currentGap = maxGap - difficultyFactor * (maxGap - minGap);
@@ -295,39 +302,29 @@ function calculatePipeGap() {
   return Math.max(currentGap, minGap);
 }
 
-// Spawn new pipe
-function spawnPipe() {
+// Spawn new stone obstacle
+function spawnObstacle() {
   // Calculate dynamic gap based on current score
-  const currentGap = calculatePipeGap();
+  const currentGap = calculateObstacleGap();
 
-  const gapY = Math.random() * 60 + 20; // Random gap position
-
-  const topPipe = {
+  // Create stone obstacle on the ground
+  const stoneObstacle = {
     x: 100,
-    y: 0,
-    height: gapY,
-    width: gameState.pipeWidth,
+    y: 85 - gameState.obstacleHeight, // Position on ground (85vh) minus obstacle height
+    height: gameState.obstacleHeight,
+    width: gameState.obstacleWidth,
     passed: false,
   };
 
-  const bottomPipe = {
-    x: 100,
-    y: gapY + currentGap, // Use dynamic gap
-    height: 100 - (gapY + currentGap), // Height from gap to bottom
-    width: gameState.pipeWidth,
-    passed: false,
-  };
+  gameState.obstacles.push(stoneObstacle);
 
-  gameState.pipes.push(topPipe, bottomPipe);
-
-  // Debug: log pipe creation with current difficulty
+  // Debug: log obstacle creation with current difficulty
   console.log(
-    "Pipes spawned with gap:",
+    "Stone obstacle spawned with gap:",
     currentGap,
     "Score:",
     gameState.score,
-    topPipe,
-    bottomPipe
+    stoneObstacle
   );
 }
 
@@ -342,20 +339,20 @@ function checkCollisions() {
     height: 6,
   };
 
-  // Check pipe collisions
-  for (const pipe of gameState.pipes) {
+  // Check obstacle collisions (stones)
+  for (const obstacle of gameState.obstacles) {
     if (
-      birdRect.x < pipe.x + pipe.width &&
-      birdRect.x + birdRect.width > pipe.x &&
-      birdRect.y < pipe.y + pipe.height &&
-      birdRect.y + birdRect.height > pipe.y
+      birdRect.x < obstacle.x + obstacle.width &&
+      birdRect.x + birdRect.width > obstacle.x &&
+      birdRect.y < obstacle.y + obstacle.height &&
+      birdRect.y + birdRect.height > obstacle.y
     ) {
       gameOver();
       return;
     }
   }
 
-  // Only die when bird goes completely off screen (very forgiving)
+  // Only die when bird goes completely off screen
   if (gameState.birdY <= 0 || gameState.birdY >= 98) {
     gameOver();
   }
@@ -374,37 +371,38 @@ function renderGame() {
   }
 
   // Render pipes
-  renderPipes();
+  renderObstacles();
 }
 
-// Render pipes
-function renderPipes() {
-  // Remove existing pipe elements
-  const existingPipes = document.querySelectorAll(".pipe_sprite");
-  existingPipes.forEach((pipe) => pipe.remove());
+// Render obstacles (stones)
+function renderObstacles() {
+  // Remove existing obstacle elements
+  const existingObstacles = document.querySelectorAll(".pipe_sprite");
+  existingObstacles.forEach((obstacle) => obstacle.remove());
 
-  // Create new pipe elements
-  gameState.pipes.forEach((pipe) => {
-    const pipeElement = document.createElement("div");
-    pipeElement.className = "pipe_sprite";
+  // Create new obstacle elements
+  gameState.obstacles.forEach((obstacle) => {
+    const obstacleElement = document.createElement("div");
+    obstacleElement.className = "pipe_sprite"; // Keep class name for now
 
     // Fix positioning - use fixed positioning and proper units
-    pipeElement.style.position = "fixed";
-    pipeElement.style.left = pipe.x + "vw";
-    pipeElement.style.top = pipe.y + "vh";
-    pipeElement.style.height = pipe.height + "vh";
-    pipeElement.style.width = pipe.width + "vw";
+    obstacleElement.style.position = "fixed";
+    obstacleElement.style.left = obstacle.x + "vw";
+    obstacleElement.style.top = obstacle.y + "vh";
+    obstacleElement.style.height = obstacle.height + "vh";
+    obstacleElement.style.width = obstacle.width + "vw";
 
-    // Fix z-index - pipes should be behind the bird
-    pipeElement.style.zIndex = "10";
+    // Fix z-index - obstacles should be behind the bird
+    obstacleElement.style.zIndex = "10";
 
-    // Remove debug styling and use proper pipe appearance
-    pipeElement.style.background = "radial-gradient(lightgreen 50%, green)";
-    pipeElement.style.border = "5px solid #2c3e50";
-    pipeElement.style.borderRadius = "5px";
-    pipeElement.style.boxShadow = "0 0 20px rgba(0, 0, 0, 0.3)";
+    // Make obstacles look like stones
+    obstacleElement.style.background =
+      "radial-gradient(#8B4513 30%, #654321 70%)";
+    obstacleElement.style.border = "3px solid #3E2723";
+    obstacleElement.style.borderRadius = "8px";
+    obstacleElement.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.5)";
 
-    document.body.appendChild(pipeElement);
+    document.body.appendChild(obstacleElement);
   });
 }
 
@@ -484,9 +482,9 @@ function restartGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = false;
   gameState.score = 0;
-  gameState.birdY = 50;
+  gameState.birdY = 85;
   gameState.birdVelocity = 0;
-  gameState.pipes = [];
+  gameState.obstacles = [];
   gameState.countdown = 3;
 
   // Cancel any ongoing animation
