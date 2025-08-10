@@ -1,27 +1,90 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="images/favicon.ico"/>
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="images/favicon.ico" />
     <title>Flappy Bird Game</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css" />
     <script src="script.js" defer></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="background"></div>
-    <img src="images/Bird.png" alt="bird-img" class="bird" id="bird-1">
-    <div class="message">
-    <img src="/images/getReady.png" alt=""><p><svg height="18" width="18" viewBox="0 0 512 512"><path d="M256 512A256 256 0 1 0 256 0a256 256 0 1 0 0 512zM377 271c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0l-87-87-87 87c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9L239 167c9.4-9.4 24.6-9.4 33.9 0L377 271z"/></svg></span> ArrowUp to Control</p>
-    <div class="message" id="gameOverMessage" style="display: none;">
-        <h3 id="gameOverText" style="color: red;">Game Over</h3>
-        <p>Press Enter To Restart</p>
+
+    <!-- Start Screen -->
+    <div class="start-screen" id="startScreen">
+      <div class="start-content">
+        <h1 class="game-title">Flappy Bird</h1>
+        <div class="controls-info">
+          <p>
+            <span class="key">SPACE</span> or <span class="key">↑</span> to Flap
+          </p>
+          <p><span class="key">P</span> to Pause</p>
+          <p><span class="key">R</span> to Restart</p>
+        </div>
+        <button class="start-btn" id="startBtn">Start Game</button>
+        <div class="high-score">
+          <p>High Score: <span id="highScoreDisplay">0</span></p>
+        </div>
+      </div>
     </div>
+
+    <!-- Game UI -->
+    <div class="game-ui" id="gameUI" style="display: none">
+      <img src="images/Bird.png" alt="bird-img" class="bird" id="bird-1" />
+
+      <!-- Pause Overlay -->
+      <div class="pause-overlay" id="pauseOverlay" style="display: none">
+        <div class="pause-content">
+          <h2>Game Paused</h2>
+          <p>Press <span class="key">P</span> to Resume</p>
+          <button class="resume-btn" id="resumeBtn">Resume</button>
+        </div>
+      </div>
+
+      <!-- Game Over Screen -->
+      <div class="game-over-screen" id="gameOverScreen" style="display: none">
+        <div class="game-over-content">
+          <h2>Game Over!</h2>
+          <div class="final-score">
+            <p>Score: <span id="finalScore">0</span></p>
+            <p>High Score: <span id="finalHighScore">0</span></p>
+          </div>
+          <div class="game-over-buttons">
+            <button class="restart-btn" id="restartBtn">Play Again</button>
+            <button class="menu-btn" id="menuBtn">Main Menu</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Score Display -->
+      <div class="score-display">
+        <div class="current-score">
+          <span class="score-label">Score:</span>
+          <span class="score-value" id="currentScore">0</span>
+        </div>
+        <div class="high-score-display">
+          <span class="high-score-label">Best:</span>
+          <span class="high-score-value" id="gameHighScore">0</span>
+        </div>
+      </div>
+
+      <!-- Instructions (shown during gameplay) -->
+      <div class="game-instructions" id="gameInstructions">
+        <p>
+          Press <span class="key">SPACE</span> or <span class="key">↑</span> to
+          flap!
+        </p>
+      </div>
     </div>
-    <div class="score">
-        <span class="score_title"></span>
-        <span class="score_val"></span>
-    </div>
-</body>
+
+    <!-- Loading Screen -->
+    <!-- <div class="loading-screen" id="loadingScreen">
+      <div class="loading-content">
+        <div class="loading-spinner"></div>
+        <p>Loading...</p>
+      </div>
+    </div> -->
+  </body>
 </html>
