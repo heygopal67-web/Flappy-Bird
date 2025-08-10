@@ -6,14 +6,14 @@ let gameState = {
   isCountdown: false,
   score: 0,
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
-  birdY: 75, // Bird now runs on the ground (75vh from top) - adjusted from 85
+  birdY: 70, // Bird now runs on the ground (70vh from top) - properly positioned on ground
   birdVelocity: 0,
   gravity: 0.5, // Reduced gravity for slower, more controlled jumping
   jumpPower: -8, // Reduced jump power for gentler jumps
   obstacles: [], // Changed from pipes to obstacles
   obstacleGap: 50, // Increased distance between obstacles
-  obstacleWidth: 10, // Consistent width for all stone obstacles
-  obstacleHeight: 20, // Consistent height for all stone obstacles
+  obstacleWidth: 10, // Consistent width for all obstacles
+  obstacleHeight: 20, // Consistent height for all obstacles
   gameSpeed: 1, // Slower horizontal movement for better control
   animationId: null,
   countdown: 3,
@@ -21,6 +21,7 @@ let gameState = {
   jumpCooldown: 300, // Longer cooldown for jumping
   baseObstacleGap: 50, // Store the base gap for difficulty progression
   isGrounded: true, // Track if bird is on the ground
+  obstacleTypes: ["stone", "stone2", "cactus", "wood"], // Different obstacle types
 };
 
 // DOM Elements
@@ -133,7 +134,7 @@ function startGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = true;
   gameState.score = 0;
-  gameState.birdY = 85;
+  gameState.birdY = 70;
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
@@ -252,9 +253,9 @@ function updateBird() {
 
   gameState.birdY += gameState.birdVelocity;
 
-  // Ground collision - bird runs on the ground (adjusted from 85 to 75)
-  if (gameState.birdY >= 75) {
-    gameState.birdY = 75;
+  // Ground collision - bird runs on the ground (adjusted to 70)
+  if (gameState.birdY >= 71) {
+    gameState.birdY = 71;
     gameState.birdVelocity = 0;
     gameState.isGrounded = true;
   } else {
@@ -302,29 +303,38 @@ function calculateObstacleGap() {
   return Math.max(currentGap, minGap);
 }
 
-// Spawn new stone obstacle
+// Spawn new obstacle
 function spawnObstacle() {
   // Calculate dynamic gap based on current score
   const currentGap = calculateObstacleGap();
 
-  // Create stone obstacle on the ground with consistent positioning
-  const stoneObstacle = {
+  // Randomly select obstacle type
+  const randomType =
+    gameState.obstacleTypes[
+      Math.floor(Math.random() * gameState.obstacleTypes.length)
+    ];
+
+  // Create obstacle on the ground with consistent positioning
+  const obstacle = {
     x: 100,
-    y: 75 - gameState.obstacleHeight, // Position on ground (75vh) minus obstacle height
+    y: 70 - gameState.obstacleHeight, // Position on ground (70vh) minus obstacle height
     height: gameState.obstacleHeight,
     width: gameState.obstacleWidth,
+    type: randomType, // Store the obstacle type
     passed: false,
   };
 
-  gameState.obstacles.push(stoneObstacle);
+  gameState.obstacles.push(obstacle);
 
   // Debug: log obstacle creation with current difficulty
   console.log(
-    "Stone obstacle spawned with gap:",
+    "Obstacle spawned:",
+    randomType,
+    "with gap:",
     currentGap,
     "Score:",
     gameState.score,
-    stoneObstacle
+    obstacle
   );
 }
 
@@ -374,7 +384,7 @@ function renderGame() {
   renderObstacles();
 }
 
-// Render obstacles (stones)
+// Render obstacles (stones, cacti, wood)
 function renderObstacles() {
   // Remove existing obstacle elements
   const existingObstacles = document.querySelectorAll(".pipe_sprite");
@@ -395,12 +405,33 @@ function renderObstacles() {
     // Fix z-index - obstacles should be behind the bird
     obstacleElement.style.zIndex = "10";
 
-    // Make obstacles look like stones
-    obstacleElement.style.background =
-      "radial-gradient(#8B4513 30%, #654321 70%)";
-    obstacleElement.style.border = "3px solid #3E2723";
-    obstacleElement.style.borderRadius = "8px";
-    obstacleElement.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.5)";
+    // Remove all borders and styling completely
+    obstacleElement.style.border = "none";
+    obstacleElement.style.outline = "none";
+    obstacleElement.style.boxShadow = "none";
+    obstacleElement.style.backgroundColor = "transparent";
+
+    // Use different images based on obstacle type
+    switch (obstacle.type) {
+      case "stone":
+        obstacleElement.style.backgroundImage = "url('images/stone.png')";
+        break;
+      case "stone2":
+        obstacleElement.style.backgroundImage = "url('images/stone2.png')";
+        break;
+      case "cactus":
+        obstacleElement.style.backgroundImage = "url('images/cactus.png')";
+        break;
+      case "wood":
+        obstacleElement.style.backgroundImage = "url('images/wood.png')";
+        break;
+      default:
+        obstacleElement.style.backgroundImage = "url('images/stone.png')";
+    }
+
+    obstacleElement.style.backgroundSize = "100% 100%";
+    obstacleElement.style.backgroundRepeat = "no-repeat";
+    obstacleElement.style.backgroundPosition = "center";
 
     document.body.appendChild(obstacleElement);
   });
@@ -482,7 +513,7 @@ function restartGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = false;
   gameState.score = 0;
-  gameState.birdY = 85;
+  gameState.birdY = 70;
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
