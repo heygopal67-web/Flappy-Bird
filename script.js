@@ -8,14 +8,14 @@ let gameState = {
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
   birdY: 50,
   birdVelocity: 0,
-  gravity: 0.3,
-  jumpPower: -6,
+  gravity: 0.15,
+  jumpPower: -4,
   pipes: [],
   pipeGap: 150,
   pipeWidth: 6,
-  gameSpeed: 1.5,
+  gameSpeed: 1,
   animationId: null,
-  countdown: 3
+  countdown: 3,
 };
 
 // DOM Elements
@@ -142,24 +142,38 @@ function startGame() {
 
 // Start countdown before game begins
 function startCountdown() {
-  const countdownElement = document.createElement('div');
-  countdownElement.className = 'countdown';
-  countdownElement.innerHTML = '<h2>Get Ready!</h2><div class="countdown-number">3</div>';
+  const countdownElement = document.createElement("div");
+  countdownElement.className = "countdown";
+  countdownElement.innerHTML =
+    '<h2>Get Ready!</h2><div class="countdown-number">3</div>';
   document.body.appendChild(countdownElement);
 
   let count = 3;
   const countdownInterval = setInterval(() => {
     count--;
-    const numberElement = countdownElement.querySelector('.countdown-number');
+    const numberElement = countdownElement.querySelector(".countdown-number");
     if (numberElement) {
       numberElement.textContent = count;
     }
-    
+
     if (count <= 0) {
       clearInterval(countdownInterval);
-      countdownElement.remove();
-      gameState.isCountdown = false;
-      gameLoop();
+      countdownElement.innerHTML = "<h2>Go!</h2>";
+
+      // Add a small delay after "Go!" before starting the game
+      setTimeout(() => {
+        countdownElement.remove();
+        gameState.isCountdown = false;
+        // Start with very gentle movement
+        gameState.birdVelocity = 0;
+        gameState.gravity = 0.1; // Even gentler gravity at start
+        gameLoop();
+
+        // Gradually increase gravity to normal after 2 seconds
+        setTimeout(() => {
+          gameState.gravity = 0.15;
+        }, 2000);
+      }, 1000);
     }
   }, 1000);
 }
@@ -217,8 +231,20 @@ function updateGame() {
 // Update bird physics
 function updateBird() {
   if (gameState.isCountdown) return;
-  
+
+  // Apply gravity more gently
   gameState.birdVelocity += gameState.gravity;
+
+  // Limit maximum falling speed
+  if (gameState.birdVelocity > 3) {
+    gameState.birdVelocity = 3;
+  }
+
+  // Limit maximum upward speed
+  if (gameState.birdVelocity < -4) {
+    gameState.birdVelocity = -4;
+  }
+
   gameState.birdY += gameState.birdVelocity;
 
   // Keep bird within screen bounds with better boundaries
@@ -279,12 +305,12 @@ function spawnPipe() {
 // Check for collisions
 function checkCollisions() {
   if (gameState.isCountdown) return;
-  
+
   const birdRect = {
     x: 30,
     y: gameState.birdY,
     width: 8,
-    height: 6
+    height: 6,
   };
 
   // Check pipe collisions
@@ -343,9 +369,16 @@ function renderPipes() {
 
 // Jump function
 function jump() {
-  if (gameState.isPaused || gameState.isGameOver || gameState.isCountdown) return;
+  if (gameState.isPaused || gameState.isGameOver || gameState.isCountdown)
+    return;
 
+  // More controlled jump with less extreme velocity change
   gameState.birdVelocity = gameState.jumpPower;
+
+  // Add a small upward boost to make it feel more responsive
+  if (gameState.birdVelocity > 0) {
+    gameState.birdVelocity = gameState.jumpPower;
+  }
 }
 
 // Game over
@@ -387,14 +420,28 @@ function restartGame() {
   const existingPipes = document.querySelectorAll(".pipe_sprite");
   existingPipes.forEach((pipe) => pipe.remove());
 
+  // Remove countdown if it exists
+  const countdownElement = document.querySelector(".countdown");
+  if (countdownElement) {
+    countdownElement.remove();
+  }
+
   // Reset game state
   gameState.isPlaying = false;
   gameState.isPaused = false;
   gameState.isGameOver = false;
+  gameState.isCountdown = false;
   gameState.score = 0;
-  gameState.birdY = 40;
+  gameState.birdY = 50;
   gameState.birdVelocity = 0;
   gameState.pipes = [];
+  gameState.countdown = 3;
+
+  // Cancel any ongoing animation
+  if (gameState.animationId) {
+    cancelAnimationFrame(gameState.animationId);
+    gameState.animationId = null;
+  }
 
   // Show start screen
   showStartScreen();
