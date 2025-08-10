@@ -9,13 +9,15 @@ let gameState = {
   birdY: 50,
   birdVelocity: 0,
   gravity: 0.15,
-  jumpPower: -4,
+  jumpPower: -2.5,
   pipes: [],
   pipeGap: 150,
   pipeWidth: 6,
   gameSpeed: 1,
   animationId: null,
   countdown: 3,
+  canJump: true,
+  jumpCooldown: 150,
 };
 
 // DOM Elements
@@ -236,24 +238,24 @@ function updateBird() {
   gameState.birdVelocity += gameState.gravity;
 
   // Limit maximum falling speed
-  if (gameState.birdVelocity > 3) {
-    gameState.birdVelocity = 3;
+  if (gameState.birdVelocity > 2.5) {
+    gameState.birdVelocity = 2.5;
   }
 
   // Limit maximum upward speed
-  if (gameState.birdVelocity < -4) {
-    gameState.birdVelocity = -4;
+  if (gameState.birdVelocity < -2.5) {
+    gameState.birdVelocity = -2.5;
   }
 
   gameState.birdY += gameState.birdVelocity;
 
   // Keep bird within screen bounds with better boundaries
-  if (gameState.birdY < 5) {
-    gameState.birdY = 5;
+  if (gameState.birdY < 8) {
+    gameState.birdY = 8;
     gameState.birdVelocity = 0;
   }
-  if (gameState.birdY > 85) {
-    gameState.birdY = 85;
+  if (gameState.birdY > 82) {
+    gameState.birdY = 82;
     gameState.birdVelocity = 0;
   }
 }
@@ -327,7 +329,7 @@ function checkCollisions() {
   }
 
   // Check boundary collisions with better boundaries
-  if (gameState.birdY <= 5 || gameState.birdY >= 85) {
+  if (gameState.birdY <= 8 || gameState.birdY >= 82) {
     gameOver();
   }
 }
@@ -369,16 +371,27 @@ function renderPipes() {
 
 // Jump function
 function jump() {
-  if (gameState.isPaused || gameState.isGameOver || gameState.isCountdown)
+  if (
+    gameState.isPaused ||
+    gameState.isGameOver ||
+    gameState.isCountdown ||
+    !gameState.canJump
+  )
     return;
 
-  // More controlled jump with less extreme velocity change
+  // Much gentler jump - just a small upward boost
   gameState.birdVelocity = gameState.jumpPower;
 
-  // Add a small upward boost to make it feel more responsive
-  if (gameState.birdVelocity > 0) {
+  // Prevent multiple rapid jumps from stacking
+  if (gameState.birdVelocity < -1) {
     gameState.birdVelocity = gameState.jumpPower;
   }
+
+  // Add jump cooldown to prevent rapid tapping
+  gameState.canJump = false;
+  setTimeout(() => {
+    gameState.canJump = true;
+  }, gameState.jumpCooldown);
 }
 
 // Game over
