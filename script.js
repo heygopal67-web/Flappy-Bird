@@ -8,8 +8,8 @@ let gameState = {
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
   birdY: 50,
   birdVelocity: 0,
-  gravity: 0.15,
-  jumpPower: -2.5,
+  gravity: 0.12,
+  jumpPower: -1.8,
   pipes: [],
   pipeGap: 150,
   pipeWidth: 6,
@@ -238,24 +238,24 @@ function updateBird() {
   gameState.birdVelocity += gameState.gravity;
 
   // Limit maximum falling speed
-  if (gameState.birdVelocity > 2.5) {
-    gameState.birdVelocity = 2.5;
+  if (gameState.birdVelocity > 2) {
+    gameState.birdVelocity = 2;
   }
 
   // Limit maximum upward speed
-  if (gameState.birdVelocity < -2.5) {
-    gameState.birdVelocity = -2.5;
+  if (gameState.birdVelocity < -2) {
+    gameState.birdVelocity = -2;
   }
 
   gameState.birdY += gameState.birdVelocity;
 
-  // Keep bird within screen bounds with better boundaries
-  if (gameState.birdY < 8) {
-    gameState.birdY = 8;
+  // Keep bird within screen bounds with much more forgiving boundaries
+  if (gameState.birdY < 2) {
+    gameState.birdY = 2;
     gameState.birdVelocity = 0;
   }
-  if (gameState.birdY > 82) {
-    gameState.birdY = 82;
+  if (gameState.birdY > 95) {
+    gameState.birdY = 95;
     gameState.birdVelocity = 0;
   }
 }
@@ -328,8 +328,8 @@ function checkCollisions() {
     }
   }
 
-  // Check boundary collisions with better boundaries
-  if (gameState.birdY <= 8 || gameState.birdY >= 82) {
+  // Only die when bird goes completely off screen (very forgiving)
+  if (gameState.birdY <= 0 || gameState.birdY >= 98) {
     gameOver();
   }
 }
