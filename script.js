@@ -8,16 +8,17 @@ let gameState = {
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
   birdY: 50,
   birdVelocity: 0,
-  gravity: 0.12,
-  jumpPower: -1.8,
+  gravity: 0.08, // Reduced from 0.12 for slower initial speed
+  jumpPower: -1.2, // Reduced from -1.8 for gentler jumps
   pipes: [],
-  pipeGap: 25, // Reduced from 150 to 25vh for better gameplay
+  pipeGap: 35, // Increased initial gap from 25 to 35vh for easier start
   pipeWidth: 6,
-  gameSpeed: 1,
+  gameSpeed: 0.8, // Reduced from 1 for slower initial pipe movement
   animationId: null,
   countdown: 3,
   canJump: true,
   jumpCooldown: 150,
+  basePipeGap: 35, // Store the base gap for difficulty progression
 };
 
 // DOM Elements
@@ -281,8 +282,24 @@ function updatePipes() {
   }
 }
 
+// Calculate dynamic pipe gap based on score (gets harder as score increases)
+function calculatePipeGap() {
+  // Start with base gap and reduce it as score increases
+  const difficultyFactor = Math.min(gameState.score / 10, 1); // Max difficulty at score 10
+  const minGap = 20; // Minimum gap (hardest)
+  const maxGap = gameState.basePipeGap; // Maximum gap (easiest)
+
+  // Linear difficulty progression
+  const currentGap = maxGap - difficultyFactor * (maxGap - minGap);
+
+  return Math.max(currentGap, minGap);
+}
+
 // Spawn new pipe
 function spawnPipe() {
+  // Calculate dynamic gap based on current score
+  const currentGap = calculatePipeGap();
+
   const gapY = Math.random() * 60 + 20; // Random gap position
 
   const topPipe = {
@@ -295,16 +312,23 @@ function spawnPipe() {
 
   const bottomPipe = {
     x: 100,
-    y: gapY + gameState.pipeGap, // Start from the gap position
-    height: 100 - (gapY + gameState.pipeGap), // Height from gap to bottom
+    y: gapY + currentGap, // Use dynamic gap
+    height: 100 - (gapY + currentGap), // Height from gap to bottom
     width: gameState.pipeWidth,
     passed: false,
   };
 
   gameState.pipes.push(topPipe, bottomPipe);
 
-  // Debug: log pipe creation
-  console.log("Pipes spawned:", topPipe, bottomPipe);
+  // Debug: log pipe creation with current difficulty
+  console.log(
+    "Pipes spawned with gap:",
+    currentGap,
+    "Score:",
+    gameState.score,
+    topPipe,
+    bottomPipe
+  );
 }
 
 // Check for collisions
