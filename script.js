@@ -14,7 +14,9 @@ let gameState = {
   obstacleGap: 50, // Increased distance between obstacles
   obstacleWidth: 10, // Consistent width for all obstacles
   obstacleHeight: 20, // Consistent height for all obstacles
-  gameSpeed: 1, // Slower horizontal movement for better control
+  gameSpeed: 0.5, // Start with very slow speed
+  baseGameSpeed: 0.5, // Store the base speed for progression
+  maxGameSpeed: 2.5, // Maximum speed limit
   animationId: null,
   countdown: 3,
   canJump: true,
@@ -138,6 +140,7 @@ function startGame() {
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
+  gameState.gameSpeed = gameState.baseGameSpeed; // Reset to base speed
 
   startScreen.style.display = "none";
   gameUI.style.display = "block";
@@ -220,12 +223,12 @@ function updateGame() {
   updateBird();
 
   // Update pipes
-  updatePipes();
+  updateObstacles();
 
   // Check collisions
   checkCollisions();
 
-  // Spawn new pipes
+  // Spawn new obstacles with varied spacing
   if (
     gameState.obstacles.length === 0 ||
     gameState.obstacles[gameState.obstacles.length - 1].x < 70
@@ -254,8 +257,8 @@ function updateBird() {
   gameState.birdY += gameState.birdVelocity;
 
   // Ground collision - bird runs on the ground (adjusted to 70)
-  if (gameState.birdY >= 71) {
-    gameState.birdY = 71;
+  if (gameState.birdY >= 70) {
+    gameState.birdY = 70;
     gameState.birdVelocity = 0;
     gameState.isGrounded = true;
   } else {
@@ -269,44 +272,59 @@ function updateBird() {
   }
 }
 
-// Update pipes
-function updatePipes() {
-  for (let i = gameState.obstacles.length - 1; i >= 0; i--) {
-    const obstacle = gameState.obstacles[i];
+// Update obstacles (stones, cacti, wood)
+function updateObstacles() {
+  if (gameState.isCountdown) return;
+
+  // Calculate current game speed based on score
+  gameState.gameSpeed = calculateGameSpeed();
+
+  // Move obstacles left
+  gameState.obstacles.forEach((obstacle) => {
     obstacle.x -= gameState.gameSpeed;
 
-    // Remove pipes that are off screen
-    if (obstacle.x < -gameState.obstacleWidth) {
-      gameState.obstacles.splice(i, 1);
-    }
-
-    // Check if bird passed pipe
-    if (!obstacle.passed && obstacle.x < 30) {
+    // Check if obstacle passed the bird
+    if (!obstacle.passed && obstacle.x + obstacle.width < 30) {
       obstacle.passed = true;
       gameState.score++;
       updateScoreDisplay();
       playSound(pointSound);
     }
-  }
+  });
+
+  // Remove obstacles that are off screen
+  gameState.obstacles = gameState.obstacles.filter(
+    (obstacle) => obstacle.x + obstacle.width > -10
+  );
 }
 
-// Calculate dynamic pipe gap based on score (gets harder as score increases)
+// Calculate dynamic obstacle gap based on score
 function calculateObstacleGap() {
   // Start with base gap and reduce it as score increases
-  const difficultyFactor = Math.min(gameState.score / 10, 1); // Max difficulty at score 10
-  const minGap = 20; // Minimum gap (hardest)
-  const maxGap = gameState.baseObstacleGap; // Maximum gap (easiest)
+  const gapReduction = Math.floor(gameState.score / 5) * 2; // Reduce gap every 5 points
+  const newGap = Math.max(gameState.baseObstacleGap - gapReduction, 20); // Minimum gap of 20
+  return newGap;
+}
 
-  // Linear difficulty progression
-  const currentGap = maxGap - difficultyFactor * (maxGap - minGap);
-
-  return Math.max(currentGap, minGap);
+// Calculate progressive game speed based on score
+function calculateGameSpeed() {
+  // Start with base speed and increase gradually
+  const speedIncrease = Math.floor(gameState.score / 10) * 0.2; // Increase speed every 10 points
+  const newSpeed = Math.min(
+    gameState.baseGameSpeed + speedIncrease,
+    gameState.maxGameSpeed
+  );
+  return newSpeed;
 }
 
 // Spawn new obstacle
 function spawnObstacle() {
   // Calculate dynamic gap based on current score
   const currentGap = calculateObstacleGap();
+
+  // Add random variation to the gap (make it more natural)
+  const randomVariation = (Math.random() - 0.5) * 20; // ±10 variation
+  const finalGap = Math.max(currentGap + randomVariation, 70); // Minimum gap of 30
 
   // Randomly select obstacle type
   const randomType =
@@ -317,7 +335,7 @@ function spawnObstacle() {
   // Create obstacle on the ground with consistent positioning
   const obstacle = {
     x: 100,
-    y: 70 - gameState.obstacleHeight, // Position on ground (70vh) minus obstacle height
+    y: 65, // Position on ground (70vh) minus obstacle height so it sits properly
     height: gameState.obstacleHeight,
     width: gameState.obstacleWidth,
     type: randomType, // Store the obstacle type
@@ -331,7 +349,7 @@ function spawnObstacle() {
     "Obstacle spawned:",
     randomType,
     "with gap:",
-    currentGap,
+    finalGap,
     "Score:",
     gameState.score,
     obstacle
@@ -517,6 +535,7 @@ function restartGame() {
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
+  gameState.gameSpeed = gameState.baseGameSpeed; // Reset to base speed
 
   // Cancel any ongoing animation
   if (gameState.animationId) {
