@@ -11,7 +11,7 @@ let gameState = {
   gravity: 0.12,
   jumpPower: -1.8,
   pipes: [],
-  pipeGap: 150,
+  pipeGap: 25, // Reduced from 150 to 25vh for better gameplay
   pipeWidth: 6,
   gameSpeed: 1,
   animationId: null,
@@ -295,8 +295,8 @@ function spawnPipe() {
 
   const bottomPipe = {
     x: 100,
-    y: gapY + gameState.pipeGap,
-    height: 100 - gapY - gameState.pipeGap,
+    y: gapY + gameState.pipeGap, // Start from the gap position
+    height: 100 - (gapY + gameState.pipeGap), // Height from gap to bottom
     width: gameState.pipeWidth,
     passed: false,
   };
