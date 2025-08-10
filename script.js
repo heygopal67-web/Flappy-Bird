@@ -19,7 +19,7 @@ let gameState = {
   countdown: 3,
   canJump: true,
   jumpCooldown: 300, // Longer cooldown for jumping
-  baseObstacleGap: 35, // Store the base gap for difficulty progression
+  baseObstacleGap: 50, // Store the base gap for difficulty progression
   isGrounded: true, // Track if bird is on the ground
 };
 
@@ -307,10 +307,10 @@ function spawnObstacle() {
   // Calculate dynamic gap based on current score
   const currentGap = calculateObstacleGap();
 
-  // Create stone obstacle on the ground
+  // Create stone obstacle on the ground with consistent positioning
   const stoneObstacle = {
     x: 100,
-    y: 85 - gameState.obstacleHeight, // Position on ground (85vh) minus obstacle height
+    y: 75 - gameState.obstacleHeight, // Position on ground (75vh) minus obstacle height
     height: gameState.obstacleHeight,
     width: gameState.obstacleWidth,
     passed: false,
