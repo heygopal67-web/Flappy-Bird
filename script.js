@@ -3,17 +3,19 @@ let gameState = {
   isPlaying: false,
   isPaused: false,
   isGameOver: false,
+  isCountdown: false,
   score: 0,
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
-  birdY: 40,
+  birdY: 50,
   birdVelocity: 0,
-  gravity: 0.5,
-  jumpPower: -8,
+  gravity: 0.3,
+  jumpPower: -6,
   pipes: [],
   pipeGap: 150,
   pipeWidth: 6,
-  gameSpeed: 2,
+  gameSpeed: 1.5,
   animationId: null,
+  countdown: 3
 };
 
 // DOM Elements
@@ -124,16 +126,42 @@ function handleTouch(event) {
 function startGame() {
   gameState.isPlaying = true;
   gameState.isGameOver = false;
+  gameState.isCountdown = true;
   gameState.score = 0;
-  gameState.birdY = 40;
+  gameState.birdY = 50;
   gameState.birdVelocity = 0;
   gameState.pipes = [];
+  gameState.countdown = 3;
 
   startScreen.style.display = "none";
   gameUI.style.display = "block";
 
   updateScoreDisplay();
-  gameLoop();
+  startCountdown();
+}
+
+// Start countdown before game begins
+function startCountdown() {
+  const countdownElement = document.createElement('div');
+  countdownElement.className = 'countdown';
+  countdownElement.innerHTML = '<h2>Get Ready!</h2><div class="countdown-number">3</div>';
+  document.body.appendChild(countdownElement);
+
+  let count = 3;
+  const countdownInterval = setInterval(() => {
+    count--;
+    const numberElement = countdownElement.querySelector('.countdown-number');
+    if (numberElement) {
+      numberElement.textContent = count;
+    }
+    
+    if (count <= 0) {
+      clearInterval(countdownInterval);
+      countdownElement.remove();
+      gameState.isCountdown = false;
+      gameLoop();
+    }
+  }, 1000);
 }
 
 // Resume game from pause
@@ -188,16 +216,18 @@ function updateGame() {
 
 // Update bird physics
 function updateBird() {
+  if (gameState.isCountdown) return;
+  
   gameState.birdVelocity += gameState.gravity;
   gameState.birdY += gameState.birdVelocity;
 
-  // Keep bird within screen bounds
-  if (gameState.birdY < 0) {
-    gameState.birdY = 0;
+  // Keep bird within screen bounds with better boundaries
+  if (gameState.birdY < 5) {
+    gameState.birdY = 5;
     gameState.birdVelocity = 0;
   }
-  if (gameState.birdY > 90) {
-    gameState.birdY = 90;
+  if (gameState.birdY > 85) {
+    gameState.birdY = 85;
     gameState.birdVelocity = 0;
   }
 }
@@ -248,11 +278,13 @@ function spawnPipe() {
 
 // Check for collisions
 function checkCollisions() {
+  if (gameState.isCountdown) return;
+  
   const birdRect = {
     x: 30,
     y: gameState.birdY,
-    width: 10,
-    height: 8,
+    width: 8,
+    height: 6
   };
 
   // Check pipe collisions
@@ -268,8 +300,8 @@ function checkCollisions() {
     }
   }
 
-  // Check boundary collisions
-  if (gameState.birdY <= 0 || gameState.birdY >= 90) {
+  // Check boundary collisions with better boundaries
+  if (gameState.birdY <= 5 || gameState.birdY >= 85) {
     gameOver();
   }
 }
@@ -311,7 +343,7 @@ function renderPipes() {
 
 // Jump function
 function jump() {
-  if (gameState.isPaused || gameState.isGameOver) return;
+  if (gameState.isPaused || gameState.isGameOver || gameState.isCountdown) return;
 
   gameState.birdVelocity = gameState.jumpPower;
 }
