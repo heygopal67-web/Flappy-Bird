@@ -1,143 +1,418 @@
-let move_speed = 3, grativy = 0.5;
-let bird = document.querySelector('.bird');
-let img = document.getElementById('bird-1');
-let sound_point = new Audio('sounds effect/point.mp3');
-let sound_die = new Audio('sounds effect/die.mp3');
-let popup = document.getElementById('popup'); // New line
-// getting bird element properties
-let bird_props = bird.getBoundingClientRect();
+// Game State Management
+let gameState = {
+  isPlaying: false,
+  isPaused: false,
+  isGameOver: false,
+  score: 0,
+  highScore: localStorage.getItem("flappyBirdHighScore") || 0,
+  birdY: 40,
+  birdVelocity: 0,
+  gravity: 0.5,
+  jumpPower: -8,
+  pipes: [],
+  pipeGap: 150,
+  pipeWidth: 6,
+  gameSpeed: 2,
+  animationId: null,
+};
 
-// This method returns DOMReact -> top, right, bottom, left, x, y, width and height
-let background = document.querySelector('.background').getBoundingClientRect();
+// DOM Elements
+const startScreen = document.getElementById("startScreen");
+const gameUI = document.getElementById("gameUI");
+const loadingScreen = document.getElementById("loadingScreen");
+const pauseOverlay = document.getElementById("pauseOverlay");
+const gameOverScreen = document.getElementById("gameOverScreen");
+const bird = document.getElementById("bird-1");
+const currentScoreDisplay = document.getElementById("currentScore");
+const gameHighScoreDisplay = document.getElementById("gameHighScore");
+const highScoreDisplay = document.getElementById("highScoreDisplay");
+const finalScoreDisplay = document.getElementById("finalScore");
+const finalHighScoreDisplay = document.getElementById("finalHighScore");
+const gameInstructions = document.getElementById("gameInstructions");
 
-let score_val = document.querySelector('.score_val');
-let message = document.querySelector('.message');
-let score_title = document.querySelector('.score_title');
+// Audio Elements
+let pointSound, dieSound;
+let audioEnabled = true;
 
-let game_state = 'Start';
-img.style.display = 'none';
-message.classList.add('messageStyle');
+// Initialize the game
+function initGame() {
+  // Hide loading screen after assets are loaded
+  setTimeout(() => {
+    loadingScreen.style.display = "none";
+    startScreen.style.display = "flex";
+    updateHighScoreDisplay();
+  }, 1000);
 
-document.addEventListener('keydown', (e) => {
-    if(e.key == 'Enter' && game_state != 'Play'){
-        document.querySelectorAll('.pipe_sprite').forEach((e) => {
-            e.remove();
-        });
-     
-        img.style.display = 'block';
-        bird.style.top = '40vh';
-        game_state = 'Play';
-        message.innerHTML = '';
-        score_title.innerHTML = 'Score : ';
-        score_val.innerHTML = '0';
-        message.classList.remove('messageStyle');
-        play();
+  // Load audio
+  loadAudio();
+
+  // Event listeners
+  setupEventListeners();
+}
+
+// Load audio files
+function loadAudio() {
+  try {
+    pointSound = new Audio("sounds effect/point.mp3");
+    dieSound = new Audio("sounds effect/die.mp3");
+
+    // Preload audio
+    pointSound.load();
+    dieSound.load();
+
+    // Set volume
+    pointSound.volume = 0.3;
+    dieSound.volume = 0.4;
+  } catch (error) {
+    console.log("Audio not supported or failed to load");
+    audioEnabled = false;
+  }
+}
+
+// Setup event listeners
+function setupEventListeners() {
+  // Start button
+  document.getElementById("startBtn").addEventListener("click", startGame);
+
+  // Resume button
+  document.getElementById("resumeBtn").addEventListener("click", resumeGame);
+
+  // Restart button
+  document.getElementById("restartBtn").addEventListener("click", restartGame);
+
+  // Menu button
+  document.getElementById("menuBtn").addEventListener("click", showStartScreen);
+
+  // Keyboard controls
+  document.addEventListener("keydown", handleKeyPress);
+
+  // Touch controls for mobile
+  document.addEventListener("touchstart", handleTouch);
+}
+
+// Handle keyboard input
+function handleKeyPress(event) {
+  if (!gameState.isPlaying) return;
+
+  switch (event.code) {
+    case "Space":
+    case "ArrowUp":
+      event.preventDefault();
+      if (!gameState.isPaused) {
+        jump();
+      }
+      break;
+    case "KeyP":
+      event.preventDefault();
+      togglePause();
+      break;
+    case "KeyR":
+      event.preventDefault();
+      restartGame();
+      break;
+  }
+}
+
+// Handle touch input
+function handleTouch(event) {
+  if (!gameState.isPlaying || gameState.isPaused) return;
+  event.preventDefault();
+  jump();
+}
+
+// Start the game
+function startGame() {
+  gameState.isPlaying = true;
+  gameState.isGameOver = false;
+  gameState.score = 0;
+  gameState.birdY = 40;
+  gameState.birdVelocity = 0;
+  gameState.pipes = [];
+
+  startScreen.style.display = "none";
+  gameUI.style.display = "block";
+
+  updateScoreDisplay();
+  gameLoop();
+}
+
+// Resume game from pause
+function resumeGame() {
+  gameState.isPaused = false;
+  pauseOverlay.style.display = "none";
+  gameLoop();
+}
+
+// Pause/Unpause game
+function togglePause() {
+  if (!gameState.isPlaying || gameState.isGameOver) return;
+
+  if (gameState.isPaused) {
+    resumeGame();
+  } else {
+    gameState.isPaused = true;
+    pauseOverlay.style.display = "flex";
+    cancelAnimationFrame(gameState.animationId);
+  }
+}
+
+// Main game loop
+function gameLoop() {
+  if (gameState.isPaused || gameState.isGameOver) return;
+
+  updateGame();
+  renderGame();
+
+  gameState.animationId = requestAnimationFrame(gameLoop);
+}
+
+// Update game state
+function updateGame() {
+  // Update bird physics
+  updateBird();
+
+  // Update pipes
+  updatePipes();
+
+  // Check collisions
+  checkCollisions();
+
+  // Spawn new pipes
+  if (
+    gameState.pipes.length === 0 ||
+    gameState.pipes[gameState.pipes.length - 1].x < 70
+  ) {
+    spawnPipe();
+  }
+}
+
+// Update bird physics
+function updateBird() {
+  gameState.birdVelocity += gameState.gravity;
+  gameState.birdY += gameState.birdVelocity;
+
+  // Keep bird within screen bounds
+  if (gameState.birdY < 0) {
+    gameState.birdY = 0;
+    gameState.birdVelocity = 0;
+  }
+  if (gameState.birdY > 90) {
+    gameState.birdY = 90;
+    gameState.birdVelocity = 0;
+  }
+}
+
+// Update pipes
+function updatePipes() {
+  for (let i = gameState.pipes.length - 1; i >= 0; i--) {
+    const pipe = gameState.pipes[i];
+    pipe.x -= gameState.gameSpeed;
+
+    // Remove pipes that are off screen
+    if (pipe.x < -gameState.pipeWidth) {
+      gameState.pipes.splice(i, 1);
     }
+
+    // Check if bird passed pipe
+    if (!pipe.passed && pipe.x < 30) {
+      pipe.passed = true;
+      gameState.score++;
+      updateScoreDisplay();
+      playSound(pointSound);
+    }
+  }
+}
+
+// Spawn new pipe
+function spawnPipe() {
+  const gapY = Math.random() * 60 + 20; // Random gap position
+
+  const topPipe = {
+    x: 100,
+    y: 0,
+    height: gapY,
+    width: gameState.pipeWidth,
+    passed: false,
+  };
+
+  const bottomPipe = {
+    x: 100,
+    y: gapY + gameState.pipeGap,
+    height: 100 - gapY - gameState.pipeGap,
+    width: gameState.pipeWidth,
+    passed: false,
+  };
+
+  gameState.pipes.push(topPipe, bottomPipe);
+}
+
+// Check for collisions
+function checkCollisions() {
+  const birdRect = {
+    x: 30,
+    y: gameState.birdY,
+    width: 10,
+    height: 8,
+  };
+
+  // Check pipe collisions
+  for (const pipe of gameState.pipes) {
+    if (
+      birdRect.x < pipe.x + pipe.width &&
+      birdRect.x + birdRect.width > pipe.x &&
+      birdRect.y < pipe.y + pipe.height &&
+      birdRect.y + birdRect.height > pipe.y
+    ) {
+      gameOver();
+      return;
+    }
+  }
+
+  // Check boundary collisions
+  if (gameState.birdY <= 0 || gameState.birdY >= 90) {
+    gameOver();
+  }
+}
+
+// Render game
+function renderGame() {
+  // Update bird position
+  bird.style.top = gameState.birdY + "vh";
+
+  // Add flapping animation
+  if (gameState.birdVelocity < 0) {
+    bird.classList.add("flapping");
+  } else {
+    bird.classList.remove("flapping");
+  }
+
+  // Render pipes
+  renderPipes();
+}
+
+// Render pipes
+function renderPipes() {
+  // Remove existing pipe elements
+  const existingPipes = document.querySelectorAll(".pipe_sprite");
+  existingPipes.forEach((pipe) => pipe.remove());
+
+  // Create new pipe elements
+  gameState.pipes.forEach((pipe) => {
+    const pipeElement = document.createElement("div");
+    pipeElement.className = "pipe_sprite";
+    pipeElement.style.left = pipe.x + "vw";
+    pipeElement.style.top = pipe.y + "vh";
+    pipeElement.style.height = pipe.height + "vh";
+    pipeElement.style.width = pipe.width + "vw";
+
+    document.body.appendChild(pipeElement);
+  });
+}
+
+// Jump function
+function jump() {
+  if (gameState.isPaused || gameState.isGameOver) return;
+
+  gameState.birdVelocity = gameState.jumpPower;
+}
+
+// Game over
+function gameOver() {
+  gameState.isPlaying = false;
+  gameState.isGameOver = true;
+
+  playSound(dieSound);
+
+  // Update high score
+  if (gameState.score > gameState.highScore) {
+    gameState.highScore = gameState.score;
+    localStorage.setItem("flappyBirdHighScore", gameState.highScore);
+    updateHighScoreDisplay();
+  }
+
+  // Show game over screen
+  showGameOverScreen();
+
+  // Cancel animation
+  cancelAnimationFrame(gameState.animationId);
+}
+
+// Show game over screen
+function showGameOverScreen() {
+  finalScoreDisplay.textContent = gameState.score;
+  finalHighScoreDisplay.textContent = gameState.highScore;
+  gameOverScreen.style.display = "flex";
+  gameInstructions.style.display = "none";
+}
+
+// Restart game
+function restartGame() {
+  // Hide all overlays
+  pauseOverlay.style.display = "none";
+  gameOverScreen.style.display = "none";
+
+  // Clear pipes
+  const existingPipes = document.querySelectorAll(".pipe_sprite");
+  existingPipes.forEach((pipe) => pipe.remove());
+
+  // Reset game state
+  gameState.isPlaying = false;
+  gameState.isPaused = false;
+  gameState.isGameOver = false;
+  gameState.score = 0;
+  gameState.birdY = 40;
+  gameState.birdVelocity = 0;
+  gameState.pipes = [];
+
+  // Show start screen
+  showStartScreen();
+}
+
+// Show start screen
+function showStartScreen() {
+  startScreen.style.display = "flex";
+  gameUI.style.display = "none";
+  gameInstructions.style.display = "block";
+  updateHighScoreDisplay();
+}
+
+// Update score display
+function updateScoreDisplay() {
+  currentScoreDisplay.textContent = gameState.score;
+  gameHighScoreDisplay.textContent = gameState.highScore;
+}
+
+// Update high score display
+function updateHighScoreDisplay() {
+  highScoreDisplay.textContent = gameState.highScore;
+}
+
+// Play sound
+function playSound(audio) {
+  if (audioEnabled && audio) {
+    try {
+      audio.currentTime = 0;
+      audio.play();
+    } catch (error) {
+      console.log("Failed to play audio");
+    }
+  }
+}
+
+// Initialize game when page loads
+document.addEventListener("DOMContentLoaded", initGame);
+
+// Handle page visibility changes (pause when tab is hidden)
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden && gameState.isPlaying && !gameState.isPaused) {
+    togglePause();
+  }
 });
 
-function showGameOverPopup() {
-    popup.classList.add('show');
-    document.getElementById('gameOverMessage').style.display = 'block';
-}
-
-function restartGame() {
-    // Reset necessary variables, hide the pop-up, etc.
-    popup.classList.remove('show');
-    document.getElementById('gameOverMessage').style.display = 'none';
-    // Your game restart logic goes here
-    alert('Restarting the game!');
-}
-function play(){
-    function move(){
-        if(game_state != 'Play') return;
-        let pipe_sprite = document.querySelectorAll('.pipe_sprite');
-        pipe_sprite.forEach((element) => {
-            let pipe_sprite_props = element.getBoundingClientRect();
-            bird_props = bird.getBoundingClientRect();
-
-            if(pipe_sprite_props.right <= 0){
-                element.remove();
-            }else{
-                if (bird_props.left < pipe_sprite_props.left + pipe_sprite_props.width &&
-                    bird_props.left + bird_props.width > pipe_sprite_props.left &&
-                    bird_props.top < pipe_sprite_props.top + pipe_sprite_props.height &&
-                    bird_props.top + bird_props.height > pipe_sprite_props.top) {
-                    game_state = 'End';
-                    message.innerHTML = '<h6>Game Over</h6>'.fontcolor('white') + '<p>Press Enter To Restart</p>';
-                    message.classList.add('messageStyle');
-                    img.style.display = 'none';
-                    sound_die.play();
-                    showGameOverPopup(); // New line
-                    restartGame();
-                    return;
-                }else{
-                    if(pipe_sprite_props.right < bird_props.left && pipe_sprite_props.right + move_speed >= bird_props.left && element.increase_score == '1'){
-                        score_val.innerHTML =+ score_val.innerHTML + 1;
-                        sound_point.play();
-                    }
-                    element.style.left = pipe_sprite_props.left - move_speed + 'px';
-                }
-            }
-        });
-        requestAnimationFrame(move);
-    }
-    requestAnimationFrame(move);
-
-    let bird_dy = 0;
-    function apply_gravity(){
-        if(game_state != 'Play') return;
-        bird_dy = bird_dy + grativy;
-        document.addEventListener('keydown', (e) => {
-            if(e.key == 'ArrowUp' || e.key == ' '){
-                img.src = 'images/Bird-2.png';
-                bird_dy = -7.6;
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if(e.key == 'ArrowUp' || e.key == ' '){
-                img.src = 'images/Bird.png';
-            }
-        });
-
-        if(bird_props.top <= 0 || bird_props.bottom >= background.bottom){
-            game_state = 'End';
-            message.style.left = '28vw';
-            window.location.reload();
-            message.classList.remove('messageStyle');
-            return;
-        }
-        bird.style.top = bird_props.top + bird_dy + 'px';
-        bird_props = bird.getBoundingClientRect();
-        requestAnimationFrame(apply_gravity);
-    }
-    requestAnimationFrame(apply_gravity);
-    let pipe_seperation = 0;
-    let pipe_gap = 35;
-
-    function create_pipe(){
-        if(game_state != 'Play') return;
-
-        if(pipe_seperation > 115){
-            pipe_seperation = 0;
-
-            let pipe_posi = Math.floor(Math.random() * 43) + 8;
-            let pipe_sprite_inv = document.createElement('div');
-            pipe_sprite_inv.className = 'pipe_sprite';
-            pipe_sprite_inv.style.top = pipe_posi - 70 + 'vh';
-            pipe_sprite_inv.style.left = '100vw';
-
-            document.body.appendChild(pipe_sprite_inv);
-            let pipe_sprite = document.createElement('div');
-            pipe_sprite.className = 'pipe_sprite';
-            pipe_sprite.style.top = pipe_posi + pipe_gap + 'vh';
-            pipe_sprite.style.left = '100vw';
-            pipe_sprite.increase_score = '1';
-
-            document.body.appendChild(pipe_sprite);
-        }
-        pipe_seperation++;
-        requestAnimationFrame(create_pipe);
-    }
-    requestAnimationFrame(create_pipe);
-}
+// Handle window resize
+window.addEventListener("resize", () => {
+  // Adjust game elements for new screen size
+  if (gameState.isPlaying) {
+    renderGame();
+  }
+});
