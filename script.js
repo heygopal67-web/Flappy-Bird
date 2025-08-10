@@ -8,8 +8,8 @@ let gameState = {
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
   birdY: 75, // Bird now runs on the ground (75vh from top) - adjusted from 85
   birdVelocity: 0,
-  gravity: 0.8, // Stronger gravity for jumping physics
-  jumpPower: -12, // Stronger jump for platformer style
+  gravity: 0.5, // Reduced gravity for slower, more controlled jumping
+  jumpPower: -8, // Reduced jump power for gentler jumps
   obstacles: [], // Changed from pipes to obstacles
   obstacleGap: 50, // Increased distance between obstacles
   obstacleWidth: 10, // Consistent width for all stone obstacles
@@ -241,13 +241,13 @@ function updateBird() {
   gameState.birdVelocity += gameState.gravity;
 
   // Limit maximum falling speed
-  if (gameState.birdVelocity > 15) {
-    gameState.birdVelocity = 15;
+  if (gameState.birdVelocity > 8) {
+    gameState.birdVelocity = 8;
   }
 
   // Limit maximum upward speed
-  if (gameState.birdVelocity < -15) {
-    gameState.birdVelocity = -15;
+  if (gameState.birdVelocity < -8) {
+    gameState.birdVelocity = -8;
   }
 
   gameState.birdY += gameState.birdVelocity;
