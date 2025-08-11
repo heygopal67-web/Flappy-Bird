@@ -1,4 +1,4 @@
-# Flappy Bird Game - Enhanced UX Version
+# Flappy Run Game - Enhanced UX Version
 
 A modern, user-friendly implementation of the classic Flappy Bird game with enhanced user experience features.
 

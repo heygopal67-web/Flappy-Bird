@@ -210,7 +210,7 @@ body {
 
 /* Bird */
 .bird {
-    height: 25vh; /* sync with script birdHeightVh */
+    height: 25vh; /* sync with script birdHeightVh in script.js */
     width: auto;
 	position: fixed;
 	top: 40vh;
@@ -221,7 +221,8 @@ body {
 
 .stop-sign {
     position: fixed;
-    height: 12vh;
+    margin-top: -30px;
+    height: 25vh; /* match bird height */
     width: auto;
     z-index: 150;
     filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));

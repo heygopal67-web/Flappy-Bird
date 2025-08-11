@@ -168,6 +168,7 @@ function startGame() {
 
   startScreen.style.display = "none";
   gameUI.style.display = "block";
+  if (bird) bird.style.display = "block";
 
   updateScoreDisplay();
   startCountdown();
@@ -207,6 +208,9 @@ function startCountdown() {
     '<h2>Get Ready!</h2><div class="countdown-number">3</div>';
   document.body.appendChild(countdownElement);
 
+  // Hide runner during countdown to avoid visual overlap
+  if (bird) bird.style.display = "none";
+
   let count = 3;
   const countdownInterval = setInterval(() => {
     count--;
@@ -223,6 +227,7 @@ function startCountdown() {
       setTimeout(() => {
         countdownElement.remove();
         gameState.isCountdown = false;
+        if (bird) bird.style.display = "block"; // show when countdown finishes
         // Start with very gentle movement
         gameState.birdVelocity = 0;
         gameState.gravity = 0.1; // Even gentler gravity at start
@@ -247,6 +252,7 @@ function resumeGame() {
     bgmSound.play().catch(() => {});
   }
   if (stopSign) stopSign.style.display = "none";
+  if (bird) bird.style.display = "block";
 }
 
 // Pause/Unpause game
@@ -260,11 +266,12 @@ function togglePause() {
     pauseOverlay.style.display = "flex";
     cancelAnimationFrame(gameState.animationId);
     if (bgmSound) bgmSound.pause();
-    if (stopSign) {
+    if (stopSign && bird) {
       stopSign.style.display = "block";
       // Position exactly at the bird, then we can adjust a tiny offset in code for realism
       stopSign.style.left = getComputedStyle(bird).left;
       stopSign.style.top = getComputedStyle(bird).top;
+      bird.style.display = "none"; // hide runner while showing stop image
     }
   }
 }
@@ -594,6 +601,7 @@ function gameOver() {
   playSound(dieSound);
 
   if (bgmSound) bgmSound.pause();
+  if (bird) bird.style.display = "none";
 
   // Update high score
   if (gameState.score > gameState.highScore) {
@@ -674,6 +682,7 @@ function showStartScreen() {
   gameUI.style.display = "none";
   gameInstructions.style.display = "block";
   updateHighScoreDisplay();
+  if (bird) bird.style.display = "none";
 }
 
 // Update score display
