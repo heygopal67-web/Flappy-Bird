@@ -6,14 +6,17 @@ let gameState = {
   isCountdown: false,
   score: 0,
   highScore: localStorage.getItem("flappyBirdHighScore") || 0,
-  birdY: 70, // Bird now runs on the ground (70vh from top) - properly positioned on ground
+  // Ground line and bird size in vh for consistent alignment
+  groundTop: 85, // Top coordinate (vh) where ground starts
+  birdHeightVh: 20, // Bird visual height in vh (keep in sync with CSS)
+  birdY: 65, // groundTop - birdHeightVh
   birdVelocity: 0,
   gravity: 0.5, // Reduced gravity for slower, more controlled jumping
   jumpPower: -8, // Reduced jump power for gentler jumps
   obstacles: [], // Changed from pipes to obstacles
   obstacleGap: 50, // Increased distance between obstacles
   obstacleWidth: 10, // Consistent width for all obstacles
-  obstacleHeight: 20, // Consistent height for all obstacles
+  obstacleHeight: 10, // Consistent height for all obstacles
   gameSpeed: 0.5, // Start with very slow speed
   baseGameSpeed: 0.5, // Store the base speed for progression
   maxGameSpeed: 2.5, // Maximum speed limit
@@ -24,6 +27,7 @@ let gameState = {
   baseObstacleGap: 50, // Store the base gap for difficulty progression
   isGrounded: true, // Track if bird is on the ground
   obstacleTypes: ["stone", "stone2", "cactus", "wood"], // Different obstacle types
+  guideTimeoutId: null, // timer id for hint card
 };
 
 // DOM Elements
@@ -39,10 +43,12 @@ const highScoreDisplay = document.getElementById("highScoreDisplay");
 const finalScoreDisplay = document.getElementById("finalScore");
 const finalHighScoreDisplay = document.getElementById("finalHighScore");
 const gameInstructions = document.getElementById("gameInstructions");
+const backgroundNight = document.getElementById("backgroundNight");
+const stopSign = document.getElementById("stopSign");
 
 // Audio Elements
-let pointSound, dieSound;
-let audioEnabled = true;
+let pointSound, dieSound, bgmSound;
+let audioEnabled = localStorage.getItem("flappyAudio") !== "off";
 
 // Initialize the game
 function initGame() {
@@ -58,6 +64,13 @@ function initGame() {
 
   // Event listeners
   setupEventListeners();
+
+  // Initialize audio button state
+  const audioToggleBtn = document.getElementById("audioToggleBtn");
+  if (audioToggleBtn) {
+    audioToggleBtn.classList.toggle("muted", !audioEnabled);
+    audioToggleBtn.textContent = audioEnabled ? "🔊" : "🔇";
+  }
 }
 
 // Load audio files
@@ -65,14 +78,18 @@ function loadAudio() {
   try {
     pointSound = new Audio("sounds effect/point.mp3");
     dieSound = new Audio("sounds effect/die.mp3");
+    bgmSound = new Audio("sounds effect/bgm.mp3");
 
     // Preload audio
     pointSound.load();
     dieSound.load();
+    bgmSound.load();
 
     // Set volume
     pointSound.volume = 0.3;
     dieSound.volume = 0.4;
+    bgmSound.volume = 0.2;
+    bgmSound.loop = true;
   } catch (error) {
     console.log("Audio not supported or failed to load");
     audioEnabled = false;
@@ -98,6 +115,12 @@ function setupEventListeners() {
 
   // Touch controls for mobile
   document.addEventListener("touchstart", handleTouch);
+
+  // Audio toggle
+  const audioToggleBtn = document.getElementById("audioToggleBtn");
+  if (audioToggleBtn) {
+    audioToggleBtn.addEventListener("click", toggleAudio);
+  }
 }
 
 // Handle keyboard input
@@ -136,7 +159,8 @@ function startGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = true;
   gameState.score = 0;
-  gameState.birdY = 70;
+  // Snap bird so its bottom sits at the ground line
+  gameState.birdY = gameState.groundTop - gameState.birdHeightVh;
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
@@ -147,6 +171,32 @@ function startGame() {
 
   updateScoreDisplay();
   startCountdown();
+
+  // Show gameplay hint for 5 seconds at the start only
+  if (gameState.guideTimeoutId) {
+    clearTimeout(gameState.guideTimeoutId);
+    gameState.guideTimeoutId = null;
+  }
+  if (gameInstructions) {
+    gameInstructions.style.display = "block";
+    gameState.guideTimeoutId = setTimeout(() => {
+      gameInstructions.style.display = "none";
+      gameState.guideTimeoutId = null;
+    }, 5000);
+  }
+
+  // Start background music after a user gesture
+  if (audioEnabled && bgmSound) {
+    try {
+      bgmSound.currentTime = 0;
+      if (!bgmSound.paused) bgmSound.pause();
+      bgmSound.play().catch(() => {});
+    } catch (e) {}
+  }
+
+  // Reset background to day on new run
+  if (backgroundNight) backgroundNight.classList.remove("active");
+  if (stopSign) stopSign.style.display = "none";
 }
 
 // Start countdown before game begins
@@ -192,6 +242,11 @@ function resumeGame() {
   gameState.isPaused = false;
   pauseOverlay.style.display = "none";
   gameLoop();
+
+  if (audioEnabled && bgmSound) {
+    bgmSound.play().catch(() => {});
+  }
+  if (stopSign) stopSign.style.display = "none";
 }
 
 // Pause/Unpause game
@@ -204,6 +259,32 @@ function togglePause() {
     gameState.isPaused = true;
     pauseOverlay.style.display = "flex";
     cancelAnimationFrame(gameState.animationId);
+    if (bgmSound) bgmSound.pause();
+    if (stopSign) {
+      stopSign.style.display = "block";
+      // Position exactly at the bird, then we can adjust a tiny offset in code for realism
+      stopSign.style.left = getComputedStyle(bird).left;
+      stopSign.style.top = getComputedStyle(bird).top;
+    }
+  }
+}
+
+// Toggle audio globally (BGM + SFX)
+function toggleAudio() {
+  audioEnabled = !audioEnabled;
+  const btn = document.getElementById("audioToggleBtn");
+  if (btn) {
+    btn.classList.toggle("muted", !audioEnabled);
+    btn.textContent = audioEnabled ? "🔊" : "🔇";
+  }
+  // Persist preference
+  localStorage.setItem("flappyAudio", audioEnabled ? "on" : "off");
+  if (bgmSound) {
+    if (audioEnabled) {
+      bgmSound.play().catch(() => {});
+    } else {
+      bgmSound.pause();
+    }
   }
 }
 
@@ -229,11 +310,13 @@ function updateGame() {
   checkCollisions();
 
   // Spawn new obstacles with varied spacing
-  if (
-    gameState.obstacles.length === 0 ||
-    gameState.obstacles[gameState.obstacles.length - 1].x < 70
-  ) {
-    spawnObstacle();
+  maybeSpawnObstacle();
+
+  // Toggle night background when score threshold reached
+  if (backgroundNight) {
+    if (gameState.score >= 1) {
+      backgroundNight.classList.add("active");
+    }
   }
 }
 
@@ -256,9 +339,9 @@ function updateBird() {
 
   gameState.birdY += gameState.birdVelocity;
 
-  // Ground collision - bird runs on the ground (adjusted to 70)
-  if (gameState.birdY >= 70) {
-    gameState.birdY = 70;
+  // Ground collision - bird runs on the ground (adjusted to groundY)
+  if (gameState.birdY + gameState.birdHeightVh >= gameState.groundTop) {
+    gameState.birdY = gameState.groundTop - gameState.birdHeightVh;
     gameState.birdVelocity = 0;
     gameState.isGrounded = true;
   } else {
@@ -300,10 +383,13 @@ function updateObstacles() {
 
 // Calculate dynamic obstacle gap based on score
 function calculateObstacleGap() {
-  // Start with base gap and reduce it as score increases
-  const gapReduction = Math.floor(gameState.score / 5) * 2; // Reduce gap every 5 points
-  const newGap = Math.max(gameState.baseObstacleGap - gapReduction, 20); // Minimum gap of 20
-  return newGap;
+  // Wider, more varied gaps. Never too close.
+  const base = Math.max(
+    80,
+    gameState.baseObstacleGap + Math.floor(gameState.score / 6) * 4
+  );
+  const randomExtra = Math.random() * 60; // 0 - 60 vw extra
+  return base + randomExtra; // 80 - 200+ depending on score
 }
 
 // Calculate progressive game speed based on score
@@ -319,13 +405,6 @@ function calculateGameSpeed() {
 
 // Spawn new obstacle
 function spawnObstacle() {
-  // Calculate dynamic gap based on current score
-  const currentGap = calculateObstacleGap();
-
-  // Add random variation to the gap (make it more natural)
-  const randomVariation = (Math.random() - 0.5) * 20; // ±10 variation
-  const finalGap = Math.max(currentGap + randomVariation, 70); // Minimum gap of 30
-
   // Randomly select obstacle type
   const randomType =
     gameState.obstacleTypes[
@@ -333,27 +412,47 @@ function spawnObstacle() {
     ];
 
   // Create obstacle on the ground with consistent positioning
+  const obstacleHeight = Math.max(
+    14,
+    gameState.obstacleHeight - Math.random() * 6
+  ); // slightly lower, randomize a bit
+  const obstacleWidth = Math.max(
+    8,
+    gameState.obstacleWidth - Math.random() * 2
+  );
+
   const obstacle = {
     x: 100,
-    y: 65, // Position on ground (70vh) minus obstacle height so it sits properly
-    height: gameState.obstacleHeight,
-    width: gameState.obstacleWidth,
-    type: randomType, // Store the obstacle type
+    y: gameState.groundTop - obstacleHeight, // sit on ground line
+    height: obstacleHeight,
+    width: obstacleWidth,
+    type: randomType,
     passed: false,
   };
 
   gameState.obstacles.push(obstacle);
 
-  // Debug: log obstacle creation with current difficulty
-  console.log(
-    "Obstacle spawned:",
-    randomType,
-    "with gap:",
-    finalGap,
-    "Score:",
-    gameState.score,
-    obstacle
-  );
+  // Determine next dynamic gap and store target X for next spawn
+  const gap = calculateObstacleGap();
+  gameState.nextObstacleGap = gap;
+  // next spawn is based on how far the last obstacle moved from 100vw
+}
+
+function maybeSpawnObstacle() {
+  if (gameState.obstacles.length === 0) {
+    // First obstacle
+    spawnObstacle();
+    return;
+  }
+  const last = gameState.obstacles[gameState.obstacles.length - 1];
+  const gap =
+    typeof gameState.nextObstacleGap === "number"
+      ? gameState.nextObstacleGap
+      : calculateObstacleGap();
+  // Spawn when the last obstacle has moved at least 'gap' from the initial 100vw
+  if (100 - last.x >= gap) {
+    spawnObstacle();
+  }
 }
 
 // Check for collisions
@@ -361,10 +460,11 @@ function checkCollisions() {
   if (gameState.isCountdown) return;
 
   const birdRect = {
-    x: 30,
-    y: gameState.birdY,
-    width: 8,
-    height: 6,
+    // Shift hitbox to the right so collisions trigger closer to bird's center
+    x: 32.5, // vw
+    y: gameState.birdY + 4.0, // vh
+    width: 3.0, // vw
+    height: Math.max(8, gameState.birdHeightVh - 8), // vh
   };
 
   // Check obstacle collisions (stones)
@@ -380,8 +480,8 @@ function checkCollisions() {
     }
   }
 
-  // Only die when bird goes completely off screen
-  if (gameState.birdY <= 0 || gameState.birdY >= 98) {
+  // Only die when bird goes completely off the top of the screen
+  if (gameState.birdY <= 0) {
     gameOver();
   }
 }
@@ -396,6 +496,12 @@ function renderGame() {
     bird.classList.add("flapping");
   } else {
     bird.classList.remove("flapping");
+  }
+
+  // Keep stop sign perfectly aligned with bird while paused
+  if (gameState.isPaused && stopSign && stopSign.style.display !== "none") {
+    stopSign.style.left = getComputedStyle(bird).left;
+    stopSign.style.top = getComputedStyle(bird).top;
   }
 
   // Render pipes
@@ -420,8 +526,8 @@ function renderObstacles() {
     obstacleElement.style.height = obstacle.height + "vh";
     obstacleElement.style.width = obstacle.width + "vw";
 
-    // Fix z-index - obstacles should be behind the bird
-    obstacleElement.style.zIndex = "10";
+    // Fix z-index - obstacles should be behind overlays and the bird
+    obstacleElement.style.zIndex = "5";
 
     // Remove all borders and styling completely
     obstacleElement.style.border = "none";
@@ -432,7 +538,7 @@ function renderObstacles() {
     // Use different images based on obstacle type
     switch (obstacle.type) {
       case "stone":
-        obstacleElement.style.backgroundImage = "url('images/stone.png')";
+        obstacleElement.style.backgroundImage = "url('images/snake.png')";
         break;
       case "stone2":
         obstacleElement.style.backgroundImage = "url('images/stone2.png')";
@@ -444,7 +550,7 @@ function renderObstacles() {
         obstacleElement.style.backgroundImage = "url('images/wood.png')";
         break;
       default:
-        obstacleElement.style.backgroundImage = "url('images/stone.png')";
+        obstacleElement.style.backgroundImage = "url('images/snake.png')";
     }
 
     obstacleElement.style.backgroundSize = "100% 100%";
@@ -486,6 +592,8 @@ function gameOver() {
   gameState.isGameOver = true;
 
   playSound(dieSound);
+
+  if (bgmSound) bgmSound.pause();
 
   // Update high score
   if (gameState.score > gameState.highScore) {
@@ -531,7 +639,7 @@ function restartGame() {
   gameState.isGameOver = false;
   gameState.isCountdown = false;
   gameState.score = 0;
-  gameState.birdY = 70;
+  gameState.birdY = gameState.groundTop - gameState.birdHeightVh;
   gameState.birdVelocity = 0;
   gameState.obstacles = [];
   gameState.countdown = 3;
@@ -545,6 +653,19 @@ function restartGame() {
 
   // Show start screen
   showStartScreen();
+
+  // Ensure day mode on restart
+  if (backgroundNight) backgroundNight.classList.remove("active");
+  if (stopSign) stopSign.style.display = "none";
+
+  // Hide gameplay hint on restart until next start
+  if (gameInstructions) {
+    gameInstructions.style.display = "none";
+  }
+  if (gameState.guideTimeoutId) {
+    clearTimeout(gameState.guideTimeoutId);
+    gameState.guideTimeoutId = null;
+  }
 }
 
 // Show start screen

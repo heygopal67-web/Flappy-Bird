@@ -9,6 +9,7 @@ body {
     font-family: 'Arial', sans-serif;
     overflow: hidden;
     user-select: none;
+    -webkit-user-select: none; /* Safari */
 }
 
 /* Background */
@@ -19,6 +20,47 @@ body {
     background-size: cover;
     position: fixed;
     z-index: 1;
+}
+
+/* Night Background (cross-fade) */
+.background-night {
+    height: 100vh;
+    width: 100vw;
+    background: url('images/night.jpg') no-repeat center center fixed;
+    background-size: cover;
+    position: fixed;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 1.2s ease-in-out;
+    pointer-events: none;
+}
+
+.background-night.active {
+    opacity: 1;
+}
+
+/* Audio Toggle Button */
+.audio-toggle {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    z-index: 60;
+    background: rgba(0, 0, 0, 0.7);
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+}
+
+.audio-toggle.muted {
+    background: rgba(231, 76, 60, 0.85);
 }
 
 /* Loading Screen */
@@ -70,20 +112,23 @@ body {
 }
 
 .start-content {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 20px;
+    background: rgba(15, 32, 39, 0.9);
+    padding: 40px 36px;
+    border-radius: 24px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    max-width: 400px;
-    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    max-width: 440px;
+    width: 92%;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(3px);
 }
 
 .game-title {
     font-size: 3rem;
-    color: #2c3e50;
-    margin-bottom: 30px;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+    color: #f9f9fb;
+    margin: 10px 0 6px 0;
+    text-shadow: 0 4px 22px rgba(0, 0, 0, 0.45);
+    letter-spacing: 1px;
 }
 
 .controls-info {
@@ -92,15 +137,15 @@ body {
 }
 
 .controls-info p {
-    margin: 10px 0;
-    color: #34495e;
+    margin: 8px 0;
+    color: #d7dee6;
 }
 
 .key {
-    background: #3498db;
-    color: white;
-    padding: 5px 10px;
-    border-radius: 5px;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #0b1b2b;
+    padding: 6px 12px;
+    border-radius: 10px;
     font-weight: bold;
     display: inline-block;
     min-width: 30px;
@@ -108,51 +153,80 @@ body {
 }
 
 .start-btn {
-    background: linear-gradient(45deg, #27ae60, #2ecc71);
-    color: white;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: #ffffff;
     border: none;
-    padding: 15px 30px;
+    padding: 16px 32px;
     font-size: 1.2rem;
-    border-radius: 25px;
+    border-radius: 26px;
     cursor: pointer;
     margin: 20px 0;
-    transition: all 0.3s ease;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 10px 24px rgba(39, 174, 96, 0.35);
 }
 
 .start-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 7px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 32px rgba(39, 174, 96, 0.45);
 }
 
 .high-score {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f8f9fa;
-    border-radius: 10px;
-    border: 2px solid #e9ecef;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
 .high-score p {
-    color: #495057;
-    font-weight: bold;
+    color: #e6edf5;
+    font-weight: 600;
+}
+
+/* Start mascot and tagline */
+.mascot {
+    height: 84px;
+    width: 84px;
+    object-fit: contain;
+    filter: drop-shadow(0 8px 22px rgba(0,0,0,0.35));
+    animation: floaty 3s ease-in-out infinite;
+}
+
+.tagline {
+    color: #b7c5d6;
+    margin-bottom: 14px;
+}
+
+@keyframes floaty {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
 }
 
 /* Game UI */
 .game-ui {
     position: relative;
-    z-index: 10;
+    z-index: 1000; /* Ensure overlays inside game-ui sit above obstacles */
 }
 
 /* Bird */
 .bird {
-    height: 80px;
-    width: 100px;
+    height: 25vh; /* sync with script birdHeightVh */
+    width: auto;
 	position: fixed;
 	top: 40vh;
 	left: 30vw;
 	z-index: 100;
     transition: transform 0.1s ease;
+}
+
+.stop-sign {
+    position: fixed;
+    height: 12vh;
+    width: auto;
+    z-index: 150;
+    filter: drop-shadow(0 6px 18px rgba(0,0,0,0.35));
+    transition: opacity 0.2s ease;
+    pointer-events: none;
 }
 
 .bird.flapping {
@@ -187,33 +261,38 @@ body {
 }
 
 .pause-content {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 30px;
-    border-radius: 15px;
+    background: rgba(15, 32, 39, 0.9);
+    padding: 36px 32px;
+    border-radius: 24px;
     text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(3px);
+    color: #e6edf5;
+    animation: popIn 280ms ease;
 }
 
 .pause-content h2 {
-    color: #2c3e50;
-    margin-bottom: 15px;
+    color: #f9f9fb;
+    margin-bottom: 12px;
 }
 
 .resume-btn {
-    background: linear-gradient(45deg, #3498db, #2980b9);
-    color: white;
+    background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    color: #0b1b2b;
     border: none;
-    padding: 12px 25px;
+    padding: 12px 26px;
     font-size: 1rem;
-    border-radius: 20px;
+    border-radius: 24px;
     cursor: pointer;
     margin-top: 15px;
-    transition: all 0.3s ease;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    box-shadow: 0 10px 24px rgba(79, 172, 254, 0.35);
 }
 
 .resume-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 32px rgba(79, 172, 254, 0.45);
 }
 
 /* Game Over Screen */
@@ -231,32 +310,37 @@ body {
 }
 
 .game-over-content {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 40px;
-    border-radius: 20px;
+    background: rgba(15, 32, 39, 0.9);
+    padding: 40px 36px;
+    border-radius: 24px;
 	text-align: center;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-    max-width: 400px;
-    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    max-width: 460px;
+    width: 92%;
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(3px);
+    animation: popIn 300ms ease;
 }
 
 .game-over-content h2 {
-    color: #e74c3c;
-    font-size: 2.5rem;
-    margin-bottom: 20px;
+    color: #ff6b6b;
+    font-size: 2.6rem;
+    margin-bottom: 18px;
+    text-shadow: 0 6px 22px rgba(0,0,0,0.45);
 }
 
 .final-score {
-    margin: 20px 0;
-    padding: 20px;
-    background: #f8f9fa;
-    border-radius: 10px;
+    margin: 18px 0 10px 0;
+    padding: 18px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.12);
 }
 
 .final-score p {
-    margin: 10px 0;
+    margin: 8px 0;
     font-size: 1.2rem;
-    color: #495057;
+    color: #e6edf5;
 }
 
 .game-over-buttons {
@@ -268,28 +352,40 @@ body {
 }
 
 .restart-btn, .menu-btn {
-    padding: 12px 25px;
+    padding: 12px 26px;
     font-size: 1rem;
     border: none;
-    border-radius: 20px;
+    border-radius: 24px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    min-width: 120px;
+    transition: transform 0.2s ease, box-shadow 0.3s ease;
+    min-width: 140px;
 }
 
 .restart-btn {
-    background: linear-gradient(45deg, #27ae60, #2ecc71);
-    color: white;
+    background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(39, 174, 96, 0.35);
 }
 
 .menu-btn {
-    background: linear-gradient(45deg, #95a5a6, #7f8c8d);
-    color: white;
+    background: linear-gradient(135deg, #95a5a6 0%, #7f8c8d 100%);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(127, 140, 141, 0.35);
 }
 
 .restart-btn:hover, .menu-btn:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 14px 32px rgba(0,0,0,0.35);
+}
+
+/* Apply subtle pop-in animation to all major cards */
+.start-content, .pause-content, .game-over-content {
+  animation: popIn 260ms ease;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.96); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
 }
 
 /* Score Display */
