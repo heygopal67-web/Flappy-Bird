@@ -10,8 +10,6 @@ A small browser game where you jump over obstacles and try to survive as long as
 - High score is saved in localStorage
 - Night mode fades in after you reach a score of 10
 - Obstacles use varied spacing so runs feel less repetitive
-- A short on‑screen guide appears for the first 5 seconds of a run
-- Mobile friendly layout
 
 ## How to play
 
@@ -50,19 +48,6 @@ Flappy-Bird/
     ├── point.mp3
     └── die.mp3
 ```
-
-## Customization
-
-You can tweak gameplay quickly in `script.js`:
-
-- `groundTop` and `birdHeightVh`: set the ground line and character height
-- `baseObstacleGap` and `obstacleHeight/Width`: spacing and size of obstacles
-- `obstacleTypes`: which obstacle images are used
-- Night mode threshold: search for `backgroundNight` and change the score check
-- Audio volumes: see `loadAudio()`
-
-UI styles live in `style.css`. The start, pause and game‑over cards use the same theme, so small color or radius changes will update all of them.
-
 
 Enjoy the game and feel free to adjust the settings to match your taste.
 
