@@ -321,7 +321,7 @@ function updateGame() {
 
   // Toggle night background when score threshold reached
   if (backgroundNight) {
-    if (gameState.score >= 1) {
+    if (gameState.score >= 10) {
       backgroundNight.classList.add("active");
     }
   }
